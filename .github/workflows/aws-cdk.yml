@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+        default: 'dev'
+      stack:
+        required: true
+        type: string
+      account:
+        required: true
+        type: string
+        default: ''
+      region:
+        required: true
+        type: string
+        default: 'us-east-1'
+      role:
+        required: false
+        type: string
+        default: 'github-ci-role'
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+   deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    environment: ${{ inputs.env || 'dev' }}
+
+    if: (inputs.env == null || inputs.env == 'dev') && github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - run: yarn install
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{inputs.account}}:role/${{inputs.role}} #TODO configurable
+          aws-region: ${{inputs.region}}
+            
+      - name: Diff the stack
+        id: cdk-diff
+        env:
+          STACK: ${{inputs.stack}}
+        run: |
+          yarn cdk diff $STACK
+      
+      - name: Deploy the stack
+        id: cdk-deployment
+        env:
+          STACK: ${{ inputs.stack }}
+        run: |
+          yarn cdk deploy
