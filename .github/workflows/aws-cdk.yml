@@ -68,4 +68,4 @@ jobs:
         env:
           STACK: ${{ inputs.stack }}
         run: |
-          yarn cdk deploy $STACK
+          yarn cdk deploy $STACK --require-approval never
