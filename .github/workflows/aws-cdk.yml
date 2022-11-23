@@ -66,6 +66,7 @@ jobs:
       - name: Deploy the stack
         id: cdk-deployment
         env:
+          IMAGE_TAG: ${{ github.sha }}
           STACK: ${{ inputs.stack }}
         run: |
           yarn cdk deploy $STACK --require-approval never
